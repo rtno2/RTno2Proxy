@@ -20,7 +20,7 @@ namespace ssr::rtno2
 		logger_t logger_;
 
 	public:
-		transport_t(SerialDevice *pSerialDevice);
+		transport_t(SerialDevice *pSerialDevice, ssr::rtno2::LOGLEVEL loglevel);
 		~transport_t(void);
 
 	public:

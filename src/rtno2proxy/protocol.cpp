@@ -7,15 +7,14 @@
 #include <iostream>
 
 #include "rtno2/logger.h"
-
+#include "protocol.h"
 
 using namespace ssr::rtno2;
 
+protocol_t::protocol_t(SerialDevice *serial_device, ssr::rtno2::LOGLEVEL loglevel, ssr::rtno2::LOGLEVEL transport_loglevel) : transport_(serial_device, transport_loglevel), logger_(get_logger("protocol"))
+{
 
-protocol_t::protocol_t(SerialDevice* serial_device) :
-	transport_(serial_device), logger_(get_logger("RTnoProtocol")) {
-
-	set_log_level(&logger_, LOGLEVEL::TRACE);
+	set_log_level(&logger_, loglevel);
 	RTNO_TRACE(logger_, "RTnoProtocol() called");
 }
 
@@ -23,29 +22,35 @@ protocol_t::~protocol_t(void)
 {
 }
 
-result_t<packet_t> protocol_t::wait_and_receive_command(const COMMAND command, const uint32_t wait_usec) {
-	RTNO_TRACE(logger_, "protocol_t::wait_and_receive_command({}, {}) called", command_to_string(command), wait_usec);
+result_t<packet_t> protocol_t::wait_and_receive_command(const COMMAND command, const uint32_t wait_usec)
+{
+	RTNO_TRACE(logger_, "protocol_t::wait_and_receive_command(command={}, wait_usec={}) called", command_to_string(command), wait_usec);
 	RESULT result;
-	if ((result = transport_.is_new(wait_usec)) == RESULT::OK) {
+	if ((result = transport_.is_new(wait_usec)) == RESULT::OK)
+	{
 		auto receive_result = transport_.receive(wait_usec);
-		if (receive_result.result != RESULT::OK) {
+		if (receive_result.result != RESULT::OK)
+		{
 			RTNO_ERROR(logger_, "wait_an_receive_command failed. {}", result_to_string(receive_result.result));
 			return receive_result.result;
 		}
 
 		packet_t pac = receive_result.value.value();
-		RTNO_DEBUG(logger_, "wait_and_receive_command {}", pac.to_string());
-		if (pac.get_command() == command) {
+		RTNO_DEBUG(logger_, "in wait_and_receive_command, received packet ({})", pac.to_string());
+		if (pac.get_command() == command)
+		{
 			RTNO_TRACE(logger_, "wait_and_receive_command() exit with success");
 			return pac;
 		}
-		
-		if (pac.get_command() == COMMAND::PACKET_ERROR) {
+
+		if (pac.get_command() == COMMAND::PACKET_ERROR)
+		{
 			RTNO_ERROR(logger_, "protocol::wait_and_receive_command() detect PACKET_ERROR. Replied messasge includes RESULT({})", result_to_string(pac.get_result()));
 			return pac.get_result();
 		}
-		else {
-			RTNO_ERROR(logger_, "RTnoProtocol::waitCommand() still wait for unknown command({}/{})", ((char)pac.get_command()), ((int)pac.get_command()));
+		else
+		{
+			RTNO_ERROR(logger_, "RTnoProtocol::waitCommand() now waiting command ({}={}) but received invalid unknown command({}={}={})", command_to_string(command), (int)command, command_to_string(pac.get_command()), ((char)pac.get_command()), ((int)pac.get_command()));
 			return RESULT::ERR;
 		}
 	}
@@ -53,21 +58,24 @@ result_t<packet_t> protocol_t::wait_and_receive_command(const COMMAND command, c
 	return result;
 }
 
-
-result_t<STATE> protocol_t::get_state(uint32_t wait_usec, const int retry_count) {
+result_t<STATE> protocol_t::get_state(uint32_t wait_usec, const int retry_count)
+{
 	RTNO_TRACE(logger_, "RTnoProtocol::getRTnoState() called.");
 	static const packet_t cmd_packet(COMMAND::GET_STATE, RESULT::OK);
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 
 		auto result = wait_and_receive_command(COMMAND::GET_STATE, wait_usec);
-		if (result.result == RESULT::OK) {
+		if (result.result == RESULT::OK)
+		{
 
 			RTNO_TRACE(logger_, "RTnoProtocol::getRTnoState() exit");
 			return (STATE)result.value.value().getData()[0];
 		}
-		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+		{
 			RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 		}
 	}
@@ -76,18 +84,22 @@ result_t<STATE> protocol_t::get_state(uint32_t wait_usec, const int retry_count)
 	return RESULT::ERR;
 }
 
-result_t<EC_TYPE> protocol_t::get_ec_type(uint32_t wait_usec, const int retry_count) {
+result_t<EC_TYPE> protocol_t::get_ec_type(uint32_t wait_usec, const int retry_count)
+{
 	RTNO_TRACE(logger_, "RTnoProtocol::getRTnoExecutionContextType() called.");
 	static const packet_t cmd_packet(COMMAND::GET_CONTEXT_TYPE, RESULT::OK);
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 		auto result = wait_and_receive_command(COMMAND::GET_CONTEXT_TYPE, wait_usec);
-		if (result.result == RESULT::OK) {
+		if (result.result == RESULT::OK)
+		{
 			RTNO_TRACE(logger_, "RTnoProtocol::getRTnoExecutionContextType() exit");
 			return (EC_TYPE)result.value.value().getData()[0];
 		}
-		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+		{
 			RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 		}
 	}
@@ -95,38 +107,52 @@ result_t<EC_TYPE> protocol_t::get_ec_type(uint32_t wait_usec, const int retry_co
 	return RESULT::ERR;
 }
 
-
-result_t<profile_t> protocol_t::get_profile(const uint32_t wait_usec, const int retry_count) {
+result_t<profile_t> protocol_t::get_profile(const uint32_t wait_usec, const int retry_count)
+{
 	RTNO_TRACE(logger_, "RTnoProtocol::getRTnoProfile() called.");
 	static const packet_t cmd_packet(COMMAND::GET_PROFILE, (RESULT::OK));
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 		profile_t profile;
 
 		int timeout_count = wait_usec / 1000;
-		while (1) {
+		while (1)
+		{
 			auto result = transport_.is_new(wait_usec);
-			if (result != RESULT::OK) {
+			if (result != RESULT::OK)
+			{
 
 				RTNO_WARN(logger_, "RTnoProtocol::getRTnoProfile() isNew timeout.");
 				break;
 			}
 
 			auto receive_result = transport_.receive(wait_usec);
-			if (receive_result.result != RESULT::OK) {
-				if (receive_result.result == RESULT::PACKET_START_TIMEOUT || receive_result.result == RESULT::PACKET_HEADER_TIMEOUT || receive_result.result == RESULT::PACKET_BODY_TIMEOUT || receive_result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+			if (receive_result.result != RESULT::OK)
+			{
+				if (receive_result.result == RESULT::PACKET_START_TIMEOUT || receive_result.result == RESULT::PACKET_HEADER_TIMEOUT || receive_result.result == RESULT::PACKET_BODY_TIMEOUT || receive_result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+				{
 					RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 					break;
 				}
-				else {
+				else
+				{
 					RTNO_ERROR(logger_, "In get_profile, receive error: {}", result_to_string(receive_result.result));
 					return receive_result.result;
 				}
 			}
 
 			packet_t pac = receive_result.value.value();
-			switch ((COMMAND)pac.get_command()) {
+			switch ((COMMAND)pac.get_command())
+			{
+			case COMMAND::PLATFORM_PROFILE:
+			{
+				RTNO_DEBUG(logger_, "COMMAND::PLATFORM_PROFILE received.");
+				auto platform_profile = parse_platform_profile(pac);
+				profile.append_platform_profile(platform_profile);
+			}
+			break;
 			case COMMAND::GET_PROFILE: // Return Code.
 				RTNO_DEBUG(logger_, "COMMAND::GET_PROFILE received ({})", profile.to_string());
 				RTNO_TRACE(logger_, "RTnoProtocol::getRTnoProfile() exit");
@@ -157,7 +183,6 @@ result_t<profile_t> protocol_t::get_profile(const uint32_t wait_usec, const int 
 				RTNO_ERROR(logger_, "COMMAND::PACKET_ERROR_CHECKSUM received.");
 				return RESULT::CHECKSUM_ERROR;
 			case COMMAND::PACKET_ERROR_TIMEOUT:
-
 				RTNO_ERROR(logger_, "COMMAND::PACKET_ERROR_TIMEOUT received.");
 				return RESULT::TIMEOUT;
 			default:
@@ -176,79 +201,106 @@ result_t<profile_t> protocol_t::get_profile(const uint32_t wait_usec, const int 
 //   }
 // }
 
-port_profile_t protocol_t::parse_port_profile(const packet_t& packet) {
+platform_profile_t protocol_t::parse_platform_profile(const packet_t &packet)
+{
+	platform_profile_t profile;
+	if (packet.getDataLength() >= 1)
+	{
+		profile.architecture_ = (Architecture)packet.getData()[0];
+	}
+	return profile;
+}
+
+port_profile_t protocol_t::parse_port_profile(const packet_t &packet)
+{
 	char strbuf[64];
 	memcpy(strbuf, packet.getData() + 1, packet.getDataLength() - 1);
 	strbuf[packet.getDataLength() - 1] = 0;
 	return port_profile_t((TYPECODE)packet.getData()[0], strbuf);
 }
 
-
-static bool is_ok(const ssr::rtno2::packet_t& packet) {
+static bool is_ok(const ssr::rtno2::packet_t &packet)
+{
 	return packet.get_result() == RESULT::OK;
 }
 
-RESULT protocol_t::activate(const uint32_t wait_usec, const int retry_count) {
-	RTNO_TRACE(logger_, " - RTnoProtocol::activateRTno() called.");
+RESULT protocol_t::activate(const uint32_t wait_usec, const int retry_count)
+{
+	RTNO_TRACE(logger_, "activate() called.");
+	RTNO_INFO(logger_, "Activating RTno");
 	static const packet_t cmd_packet(COMMAND::ACTIVATE, RESULT::OK);
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 		auto result = wait_and_receive_command(COMMAND::ACTIVATE, wait_usec);
-		if (result.result == RESULT::OK) {
+		if (result.result == RESULT::OK)
+		{
 			RTNO_DEBUG(logger_, " - RTnoProtocol::activateRTno() exit with success.");
 			return result.result;
 		}
 		//      RTNO_DEBUG(m_Logger, " - RTnoProtocol::activateRTno() exit with failure.");
 
-		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+		{
 			RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 		}
 	}
 	return RESULT::ERR;
 }
 
-RESULT protocol_t::deactivate(const uint32_t wait_usec, const int retry_count) {
+RESULT protocol_t::deactivate(const uint32_t wait_usec, const int retry_count)
+{
+	RTNO_TRACE(logger_, "deactivate() called.");
+	RTNO_INFO(logger_, "Deactivating RTno");
 	static const packet_t cmd_packet(COMMAND::DEACTIVATE, RESULT::OK);
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 		auto result = wait_and_receive_command(COMMAND::DEACTIVATE, wait_usec);
-		if (result.result == RESULT::OK) {
+		if (result.result == RESULT::OK)
+		{
 			RTNO_DEBUG(logger_, " - RTnoProtocol::deactivateRTno() exit with success.");
 			return result.result;
 		}
-		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+		{
 			RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 		}
 	}
 	return RESULT::ERR;
 }
 
-RESULT protocol_t::execute(const uint32_t wait_usec, const int retry_count) {
-	RTNO_TRACE(logger_, "executeRTno() called");
+RESULT protocol_t::execute(const uint32_t wait_usec, const int retry_count)
+{
+	RTNO_TRACE(logger_, "execute() called.");
+	RTNO_INFO(logger_, "Executing RTno");
 	static const packet_t cmd_packet(COMMAND::EXECUTE, RESULT::OK);
-	for (int i = 0; i < retry_count; i++) {
+	for (int i = 0; i < retry_count; i++)
+	{
 
 		transport_.send(cmd_packet);
 		auto result = wait_and_receive_command(COMMAND::EXECUTE, wait_usec);
-		if (result.result == RESULT::OK) {
+		if (result.result == RESULT::OK)
+		{
 			RTNO_DEBUG(logger_, "executeRTno() exit with {}", result_to_string(result.value.value().get_result()));
 			return result.result;
 		}
-		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT) {
+		else if (result.result == RESULT::PACKET_START_TIMEOUT || result.result == RESULT::PACKET_HEADER_TIMEOUT || result.result == RESULT::PACKET_BODY_TIMEOUT || result.result == RESULT::PACKET_CHECKSUM_TIMEOUT)
+		{
 			RTNO_DEBUG(logger_, "In getRTnoState(), timeout. retry");
 		}
 	}
 	return RESULT::ERR;
 }
 
+RESULT protocol_t::send_inport_data(const std::string &portName, const uint8_t *data, const uint8_t length, const uint32_t wait_usec, const int retry_count)
+{
 
-RESULT protocol_t::send_inport_data(const std::string& portName, const uint8_t* data, const uint8_t length, const uint32_t wait_usec, const int retry_count) {
-
-	RTNO_TRACE(logger_, "send_inport_data(port={}, retry={}) called", portName, retry_count);
+	RTNO_TRACE(logger_, "send_inport_data(port={}, wait_usec={}, retry={}) called", portName, wait_usec, retry_count);
 	auto namelen = portName.length();
-	uint8_t buffer[64];
+	uint8_t buffer[256];
 	buffer[0] = static_cast<uint8_t>(namelen);
 	buffer[1] = length;
 	memcpy(buffer + 2, portName.c_str(), namelen);
@@ -256,7 +308,8 @@ RESULT protocol_t::send_inport_data(const std::string& portName, const uint8_t* 
 	packet_t packet(COMMAND::SEND_DATA, (RESULT)RESULT::OK, buffer, static_cast<uint8_t>(2 + namelen + length));
 	transport_.send(packet);
 	auto result = wait_and_receive_command(COMMAND::SEND_DATA, wait_usec);
-	if (result.result == RESULT::OK) {
+	if (result.result == RESULT::OK)
+	{
 		RTNO_TRACE(logger_, "send_inport_data() exit with success ({})", result.value.value().to_string());
 		return result.value.value().get_result();
 	}
@@ -264,36 +317,76 @@ RESULT protocol_t::send_inport_data(const std::string& portName, const uint8_t* 
 	return RESULT::ERR;
 }
 
-RESULT protocol_t::receive_outport_data(const std::string& portName, uint8_t* data, const uint8_t max_size, uint8_t* size_read, const uint32_t wait_usec, const int retry_count) {
+RESULT protocol_t::receive_outport_data(const std::string &portName, uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec, const int retry_count)
+{
 
-	RTNO_TRACE(logger_, "receiveData(portName={}, retry={}) called", portName, retry_count);
-	auto namelen = portName.length();//strlen(portName);
-	uint8_t buffer[64];
+	RTNO_TRACE(logger_, "receive_outport_data(portName={}, retry={}) called", portName, retry_count);
+	auto namelen = portName.length(); // strlen(portName);
+	uint8_t buffer[255];
 	buffer[0] = static_cast<uint8_t>(namelen);
 	memcpy(buffer + 2, portName.c_str(), namelen);
 	packet_t packet(COMMAND::RECEIVE_DATA, (RESULT)RESULT::OK, buffer, static_cast<uint8_t>(2 + namelen));
 	transport_.send(packet);
 	auto result = wait_and_receive_command(COMMAND::RECEIVE_DATA, wait_usec);
-	if (result.result == RESULT::OK) {
+	if (result.result == RESULT::OK)
+	{
 		auto packet = result.value.value();
-		int8_t name_len = packet.getData()[0];
-		int8_t data_len = packet.getData()[1];
+		uint8_t name_len = packet.getData()[0];
+		uint8_t data_len = packet.getData()[1];
 		*size_read = data_len;
-		if (*size_read > max_size) {
-			RTNO_ERROR(logger_, "receiveData() maximum buffer size exceeded (max={}, received={})", max_size, *size_read);
-			RTNO_ERROR(logger_, "receiveData() exit with error");
+		if (*size_read > max_size)
+		{
+			RTNO_ERROR(logger_, "receive_outport_data() maximum buffer size exceeded (max={}, received={})", max_size, *size_read);
+			RTNO_ERROR(logger_, "receive_outport_data() exit with error");
 			return packet.get_result();
 		}
+		char name[256];
+		memcpy(name, packet.getData() + 2, name_len);
+		name[name_len] = 0;
 		memcpy(data, packet.getData() + 2 + name_len, *size_read);
-		RTNO_TRACE(logger_, "receiveData() exit with success ({})", result.value.value().to_string());
+		RTNO_TRACE(logger_, "receive_outport_data() received (name={}/{}, size={}) exit with success ({})", name, name_len, *size_read, result.value.value().to_string());
 		return packet.get_result();
-
 	}
 
-	RTNO_ERROR(logger_, "receiveData() exit with error");
+	RTNO_ERROR(logger_, "receive_outport_data() exit with error");
 	return RESULT::ERR;
 }
 
+RESULT protocol_t::receive_log_data(uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec, const int retry_count)
+{
+	RTNO_TRACE(logger_, "receive_log_data(retry={}) called", retry_count);
+	packet_t packet(COMMAND::RECEIVE_LOG, (RESULT)RESULT::OK);
+	transport_.send(packet);
+	auto result = wait_and_receive_command(COMMAND::RECEIVE_LOG, wait_usec);
+	if (result.result == RESULT::OK)
+	{
+		auto packet = result.value.value();
+		if (max_size < packet.getDataLength() + 1)
+		{
+			return RESULT::LOG_DATA_EXCEED_SIZE;
+		}
+		memcpy(data, packet.getData(), packet.getDataLength());
+		data[packet.getDataLength()] = 0;
+		*size_read = packet.getDataLength();
+		RTNO_TRACE(logger_, "receive_outport_data() received (size={}) exit with success ({})", (int)(*size_read), (char *)data);
+		return packet.get_result();
+	}
+
+	RTNO_ERROR(logger_, "receive_log_data() exit with error (wait_and_receive_command returns error ({}))", result_to_string(result.result));
+	return RESULT::ERR;
+}
+
+result_t<std::string> protocol_t::get_log(const uint32_t wait_usec, const int retry_count)
+{
+	uint8_t buffer[MAX_PACKET_SIZE];
+	uint8_t size_read = 0;
+	result_t<std::string> result;
+	if ((result = this->receive_log_data(buffer, MAX_PACKET_SIZE, &size_read, wait_usec, retry_count)).result != RESULT::OK)
+	{
+		return result.result;
+	}
+	return std::string((char *)buffer);
+}
 
 // void RTnoProtocol::onAddInPort(const packet_t& packet) {
 //   m_Profile.appendInPort(parsePortProfile(packet));
@@ -302,7 +395,6 @@ RESULT protocol_t::receive_outport_data(const std::string& portName, uint8_t* da
 // void RTnoProtocol::onAddOutPort(const packet_t& packet) {
 //   m_Profile.appendOutPort(parsePortProfile(packet));
 // }
-
 
 #if 0 
 uint8_t RTnoProtocol::getRTnoStatus() {

@@ -16,9 +16,9 @@ const uint32_t RTNO_INFINITE = 0xFFFFFFFF;
 
 using namespace ssr::rtno2;
 
-transport_t::transport_t(SerialDevice* pSerialDevice) : logger_(get_logger("Transport"))
+transport_t::transport_t(SerialDevice* pSerialDevice, ssr::rtno2::LOGLEVEL loglevel) : logger_(get_logger("Transport"))
 {
-	set_log_level(&logger_, LOGLEVEL::DEBUG);
+	set_log_level(&logger_, loglevel);
 	RTNO_TRACE(logger_, "Transport() called");
 	serial_device_ = pSerialDevice;
 }
