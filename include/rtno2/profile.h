@@ -78,6 +78,14 @@ namespace ssr::rtno2
   {
   public:
     Architecture architecture_;
+
+  public:
+    std::string to_string() const
+    {
+      std::stringstream ss;
+      ss << "platform_profile_t(architecture=" << architecture_to_string(architecture_) << ")";
+      return ss.str();
+    }
   };
 
   class profile_t

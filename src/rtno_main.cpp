@@ -8,7 +8,7 @@
 
 using namespace ssr::rtno2;
 
-LOGLEVEL loglevel = LOGLEVEL::WARN;
+LOGLEVEL loglevel = LOGLEVEL::DEBUG;
 
 template <typename T>
 inline std::string strjoin(const std::vector<T> &v)
@@ -452,7 +452,7 @@ int main(const int argc, const char *argv[])
     // logger = ssr::getLogger("main");
 
     ssr::rtno2::logger_t logger(get_logger("main"));
-    set_log_level(&logger, LOGLEVEL::ERR);
+    set_log_level(&logger, LOGLEVEL::DEBUG);
 
     if (argc == 1)
     {

@@ -55,7 +55,11 @@ namespace ssr::rtno2
         case TYPECODE::TIMED_DOUBLE_SEQ:
             return "TimedDoubleSeq";
         default:
-            return "UnknownTypeCode";
+        {
+            std::ostringstream oss;
+            oss << "UnknownTypeCode(" << static_cast<int>(typecode) << ")";
+            return oss.str();
+        }
         }
     }
 }

@@ -22,6 +22,22 @@ protocol_t::~protocol_t(void)
 {
 }
 
+std::string to_byte_string(const uint8_t *data, const uint8_t size)
+{
+	std::stringstream ss;
+	ss << "[";
+	for (uint8_t i = 0; i < size; i++)
+	{
+		if (i > 0)
+		{
+			ss << ", ";
+		}
+		ss << std::to_string(data[i]);
+	}
+	ss << "]";
+	return ss.str();
+}
+
 result_t<packet_t> protocol_t::wait_and_receive_command(const COMMAND command, const uint32_t wait_usec)
 {
 	RTNO_TRACE(logger_, "protocol_t::wait_and_receive_command(command={}, wait_usec={}) called", command_to_string(command), wait_usec);
@@ -148,8 +164,8 @@ result_t<profile_t> protocol_t::get_profile(const uint32_t wait_usec, const int 
 			{
 			case COMMAND::PLATFORM_PROFILE:
 			{
-				RTNO_DEBUG(logger_, "COMMAND::PLATFORM_PROFILE received.");
 				auto platform_profile = parse_platform_profile(pac);
+				RTNO_DEBUG(logger_, "COMMAND::PLATFORM_PROFILE received ({}).", platform_profile.to_string());
 				profile.append_platform_profile(platform_profile);
 			}
 			break;
@@ -213,6 +229,7 @@ platform_profile_t protocol_t::parse_platform_profile(const packet_t &packet)
 
 port_profile_t protocol_t::parse_port_profile(const packet_t &packet)
 {
+	logger_.debug("parse_port_profile({}) called.", packet.to_string());
 	char strbuf[64];
 	memcpy(strbuf, packet.getData() + 1, packet.getDataLength() - 1);
 	strbuf[packet.getDataLength() - 1] = 0;
@@ -297,8 +314,7 @@ RESULT protocol_t::execute(const uint32_t wait_usec, const int retry_count)
 
 RESULT protocol_t::send_inport_data(const std::string &portName, const uint8_t *data, const uint8_t length, const uint32_t wait_usec, const int retry_count)
 {
-
-	RTNO_TRACE(logger_, "send_inport_data(port={}, wait_usec={}, retry={}) called", portName, wait_usec, retry_count);
+	RTNO_DEBUG(logger_, "send_inport_data(port={}, wait_usec={}, data={}, length={}, retry={}) called", portName, wait_usec, to_byte_string(data, length), length, retry_count);
 	auto namelen = portName.length();
 	uint8_t buffer[256];
 	buffer[0] = static_cast<uint8_t>(namelen);
@@ -319,7 +335,6 @@ RESULT protocol_t::send_inport_data(const std::string &portName, const uint8_t *
 
 RESULT protocol_t::receive_outport_data(const std::string &portName, uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec, const int retry_count)
 {
-
 	RTNO_TRACE(logger_, "receive_outport_data(portName={}, retry={}) called", portName, retry_count);
 	auto namelen = portName.length(); // strlen(portName);
 	uint8_t buffer[255];
@@ -344,7 +359,7 @@ RESULT protocol_t::receive_outport_data(const std::string &portName, uint8_t *da
 		memcpy(name, packet.getData() + 2, name_len);
 		name[name_len] = 0;
 		memcpy(data, packet.getData() + 2 + name_len, *size_read);
-		RTNO_TRACE(logger_, "receive_outport_data() received (name={}/{}, size={}) exit with success ({})", name, name_len, *size_read, result.value.value().to_string());
+		RTNO_DEBUG(logger_, "receive_outport_data() received (name={}/name_len={}, data_size={}, data={}) exit with success ({})", name, name_len, *size_read, to_byte_string(data, *size_read), result.value.value().to_string());
 		return packet.get_result();
 	}
 

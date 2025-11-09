@@ -57,6 +57,10 @@ namespace ssr::rtno2
 	template <>
 	inline double into<double>(const uint8_t *buf, const uint8_t size)
 	{
+		if (size == 4)
+		{
+			return into<float>(buf, size);
+		}
 		intermediate_double_uint8 i;
 		memcpy(i.uint8_value, buf, size);
 		return i.double_value;
@@ -94,13 +98,24 @@ namespace ssr::rtno2
 		template <typename T>
 		RESULT send_as(const std::string &portName, const T &value, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
 		{
+			RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
 			return send_inport_data(portName, (uint8_t *)&value, sizeof(T), wait_usec, try_count);
+			return RESULT::OK;
+		}
+
+		template <>
+		RESULT send_as<double>(const std::string &portName, const double &value, uint32_t wait_usec, int32_t try_count)
+		{
+			RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(double).name(), portName, value);
+			float fvalue = static_cast<float>(value);
+			return send_inport_data(portName, (uint8_t *)&fvalue, sizeof(float), wait_usec, try_count);
 			return RESULT::OK;
 		}
 
 		template <typename T>
 		RESULT send_seq_as(const std::string &portName, const std::vector<T> &value, const size_t length, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
 		{
+			RTNO_DEBUG(logger_, "send_seq_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
 			return send_inport_data(portName, (uint8_t *)&(value[0]), length * sizeof(T), wait_usec, try_count);
 			return RESULT::OK;
 		}
@@ -129,7 +144,9 @@ namespace ssr::rtno2
 			auto state = this->receive_outport_data(portName, buffer, BUFSIZE, &size, wait_usec, try_count);
 			if (state == RESULT::OK)
 			{
-				return into<T>(buffer, size);
+				auto v = into<T>(buffer, size);
+				RTNO_DEBUG(logger_, "receive_as<{}>('{}') received value: {}", typeid(T).name(), portName, v);
+				return v;
 			}
 			return state;
 		}
