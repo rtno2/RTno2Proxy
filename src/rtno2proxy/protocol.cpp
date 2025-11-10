@@ -11,7 +11,7 @@
 
 using namespace ssr::rtno2;
 
-protocol_t::protocol_t(SerialDevice *serial_device, ssr::rtno2::LOGLEVEL loglevel, ssr::rtno2::LOGLEVEL transport_loglevel) : transport_(serial_device, transport_loglevel), logger_(get_logger("protocol"))
+protocol_t::protocol_t(SerialDevice *serial_device, ssr::rtno2::LOGLEVEL loglevel, ssr::rtno2::LOGLEVEL transport_loglevel) : transport_(serial_device, transport_loglevel), logger_(get_logger("protocol")), architecture_(Architecture::UNKNOWN)
 {
 
 	set_log_level(&logger_, loglevel);
@@ -223,6 +223,7 @@ platform_profile_t protocol_t::parse_platform_profile(const packet_t &packet)
 	if (packet.getDataLength() >= 1)
 	{
 		profile.architecture_ = (Architecture)packet.getData()[0];
+		this->architecture_ = profile.architecture_;
 	}
 	return profile;
 }

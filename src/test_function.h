@@ -73,26 +73,26 @@ template <typename T>
 void conduct_send_and_recv_test(const std::string &test_name, ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const T initial_data, const T send_data)
 {
     ssr::rtno2::RESULT result;
-    RTNO_INFO(logger, "[TEST]'{}'", test_name);
+    RTNO_INFO(logger, "[TEST] '{}'", test_name);
     if ((result = setup(logger, protocol)) == ssr::rtno2::RESULT::OK)
     {
-        RTNO_DEBUG(logger, "  [SETUP]'{}' OK", test_name);
+        RTNO_DEBUG(logger, "  [SETUP] '{}' OK", test_name);
         if ((result = do_send_and_recv_test<T>(logger, protocol, inport_name, outport_name, initial_data, send_data)) != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "  [FAILED]'{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+            RTNO_ERROR(logger, "  [FAILED] '{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
         }
         else
         {
-            RTNO_INFO(logger, "  [PASSED]'{}' OK", test_name);
+            RTNO_INFO(logger, "  [PASSED] '{}' OK", test_name);
         }
         if ((result = teardown(logger, protocol)) == ssr::rtno2::RESULT::OK)
         {
-            RTNO_DEBUG(logger, "  [TEARDOWN]'{}' OK", test_name);
+            RTNO_DEBUG(logger, "  [TEARDOWN] '{}' OK", test_name);
         }
     }
     else
     {
-        RTNO_ERROR(logger, "  [FAILED]'{}' setup failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+        RTNO_ERROR(logger, "  [FAILED] '{}' setup failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
     }
 }
 
@@ -131,36 +131,36 @@ ssr::rtno2::RESULT do_seq_send_and_recv_test(ssr::rtno2::logger_t &logger, ssr::
         auto v = protocol.receive_seq_as<T>(outport_name, wait_usec, try_count);
         if (v.result != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "receive_seq_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
+            RTNO_ERROR(logger, "  [FAILED] receive_seq_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
             return v.result;
         }
         if (!seq_equal(v.value.value(), initial_data))
         {
-            RTNO_ERROR(logger, "received value is invalid ({} != {})", vec_to_str(initial_data), vec_to_str(v.value.value()));
+            RTNO_ERROR(logger, "  [FAILED] received value is invalid ({} != {})", vec_to_str(initial_data), vec_to_str(v.value.value()));
             return ssr::rtno2::RESULT::ERR;
         }
     }
 
     if ((result = protocol.send_seq_as<T>(inport_name, send_data, send_data.size(), wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
     {
-        RTNO_ERROR(logger, "send_seq_as('{}') failed({})", inport_name, ssr::rtno2::result_to_string(result));
+        RTNO_ERROR(logger, "  [FAILED] send_seq_as('{}') failed({})", inport_name, ssr::rtno2::result_to_string(result));
         return result;
     }
     if ((result = protocol.execute(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
     {
-        RTNO_ERROR(logger, "execute failed({})", ssr::rtno2::result_to_string(result));
+        RTNO_ERROR(logger, "  [FAILED] execute failed({})", ssr::rtno2::result_to_string(result));
         return result;
     }
     {
         auto v = protocol.receive_seq_as<T>(outport_name, wait_usec, try_count);
         if (v.result != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "receive_seq_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
+            RTNO_ERROR(logger, "  [FAILED] receive_seq_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
             return v.result;
         }
         if (!seq_equal(v.value.value(), send_data))
         {
-            RTNO_ERROR(logger, "received value is invalid ({} != {})", vec_to_str(send_data), vec_to_str(v.value.value()));
+            RTNO_ERROR(logger, "  [FAILED] received value is invalid ({} != {})", vec_to_str(send_data), vec_to_str(v.value.value()));
             return ssr::rtno2::RESULT::ERR;
         }
     }
@@ -171,17 +171,30 @@ template <typename T>
 void conduct_seq_send_and_recv_test(const std::string &test_name, ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const std::vector<T> &initial_data, const std::vector<T> &send_data)
 {
     ssr::rtno2::RESULT result;
+    RTNO_INFO(logger, "[TEST] '{}'", test_name);
     if ((result = setup(logger, protocol)) == ssr::rtno2::RESULT::OK)
     {
-        // RTNO_INFO(logger, "'{}'", test_name);
         if ((result = do_seq_send_and_recv_test<T>(logger, protocol, inport_name, outport_name, initial_data, send_data)) != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "'{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+            RTNO_ERROR(logger, "  [FAILED] '{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
         }
-        if ((result = teardown(logger, protocol)) == ssr::rtno2::RESULT::OK)
+        else
         {
-            RTNO_INFO(logger, "'{}' OK", test_name);
+            RTNO_INFO(logger, "  [PASSED] '{}' OK", test_name);
         }
+
+        if ((result = teardown(logger, protocol)) != ssr::rtno2::RESULT::OK)
+        {
+            RTNO_DEBUG(logger, "  [TEARDOWN][FAILED]'{}' teardown failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+        }
+        else
+        {
+            RTNO_DEBUG(logger, "  [TEARDOWN] '{}' OK", test_name);
+        }
+    }
+    else
+    {
+        RTNO_ERROR(logger, "  [SETUP][FAILED]'{}' setup failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
     }
 }
 

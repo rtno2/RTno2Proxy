@@ -169,7 +169,7 @@ result_t<packet_t> transport_t::receive(const uint32_t wait_usec /*=RTNO_INFINIT
 
 	if (sum != buf)
 	{
-		RTNO_ERROR(logger_, "receive() exit with checksum error. CHECKSUM value of received packet and calculated one is different.");
+		RTNO_ERROR(logger_, "receive() exit with checksum error. CHECKSUM value of received packet and calculated one is different. data is {}", packet.to_string());
 		return RESULT::CHECKSUM_ERROR;
 	}
 

@@ -73,6 +73,7 @@ namespace ssr::rtno2
 	private:
 		transport_t transport_;
 		logger_t logger_;
+		Architecture architecture_;
 
 	public:
 	public:
@@ -107,15 +108,23 @@ namespace ssr::rtno2
 		RESULT send_as<double>(const std::string &portName, const double &value, uint32_t wait_usec, int32_t try_count)
 		{
 			RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(double).name(), portName, value);
-			float fvalue = static_cast<float>(value);
-			return send_inport_data(portName, (uint8_t *)&fvalue, sizeof(float), wait_usec, try_count);
-			return RESULT::OK;
+			if (this->architecture_ == Architecture::UNKNOWN)
+			{
+				RTNO_WARN(logger_, "send_as<double> detected UNKNOWN architecture, sending as 8-byte double");
+			}
+			if (this->architecture_ == Architecture::AVR)
+			{
+				RTNO_DEBUG(logger_, "send_as<double> detected AVR architecture, sending as 4-byte float");
+				float fvalue = static_cast<float>(value);
+				return send_inport_data(portName, (uint8_t *)&fvalue, sizeof(float), wait_usec, try_count);
+			}
+			return send_inport_data(portName, (uint8_t *)&value, sizeof(double), wait_usec, try_count);
 		}
 
 		template <typename T>
 		RESULT send_seq_as(const std::string &portName, const std::vector<T> &value, const size_t length, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
 		{
-			RTNO_DEBUG(logger_, "send_seq_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
+			// RTNO_DEBUG(logger_, "send_seq_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
 			return send_inport_data(portName, (uint8_t *)&(value[0]), length * sizeof(T), wait_usec, try_count);
 			return RESULT::OK;
 		}

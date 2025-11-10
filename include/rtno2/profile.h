@@ -13,6 +13,7 @@ namespace ssr::rtno2
   {
     AVR = 1,
     ARM = 2,
+    ESP32 = 3,
     UNKNOWN = 255,
   };
 
@@ -24,6 +25,8 @@ namespace ssr::rtno2
       return "AVR";
     case Architecture::ARM:
       return "ARM";
+    case Architecture::ESP32:
+      return "ESP32";
     default:
       return "UNKNOWN";
     }
@@ -165,6 +168,31 @@ namespace ssr::rtno2
           return;
         }
       }
+    }
+
+  public:
+    result_t<port_profile_t> inport(const std::string &portName) const
+    {
+      for (auto port : inports_)
+      {
+        if (port.name() == portName)
+        {
+          return port;
+        }
+      }
+      return RESULT::INPORT_NOT_FOUND;
+    }
+
+    result_t<port_profile_t> outport(const std::string &portName) const
+    {
+      for (auto port : outports_)
+      {
+        if (port.name() == portName)
+        {
+          return port;
+        }
+      }
+      return RESULT::OUTPORT_NOT_FOUND;
     }
   };
 };
