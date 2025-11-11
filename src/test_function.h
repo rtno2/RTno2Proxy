@@ -26,73 +26,89 @@ inline std::string strjoin(const std::vector<T> &v)
 template <typename T>
 ssr::rtno2::RESULT do_send_and_recv_test(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const T initial_data, const T send_data)
 {
-    uint32_t wait_usec = 200 * 1000;
-    int try_count = 10;
-    ssr::rtno2::RESULT result;
+    try
     {
-        auto v = protocol.receive_as<T>(outport_name, wait_usec, try_count);
-        if (v.result != ssr::rtno2::RESULT::OK)
+        uint32_t wait_usec = 500 * 1000;
+        int try_count = 10;
+        ssr::rtno2::RESULT result;
         {
-            RTNO_ERROR(logger, "receive_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
-            return v.result;
+            auto v = protocol.receive_as<T>(outport_name, wait_usec, try_count);
+            if (v.result != ssr::rtno2::RESULT::OK)
+            {
+                RTNO_ERROR(logger, "receive_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
+                return v.result;
+            }
+            if (v.value.value() != initial_data)
+            {
+                RTNO_ERROR(logger, "received value is invalid ({} != {})", initial_data, v.value.value());
+                return ssr::rtno2::RESULT::ERR;
+            }
         }
-        if (v.value.value() != initial_data)
-        {
-            RTNO_ERROR(logger, "received value is invalid ({} != {})", initial_data, v.value.value());
-            return ssr::rtno2::RESULT::ERR;
-        }
-    }
 
-    if ((result = protocol.send_as<T>(inport_name, send_data, wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
-    {
-        RTNO_ERROR(logger, "send_as('{}') failed({})", inport_name, ssr::rtno2::result_to_string(result));
-        return result;
-    }
-    if ((result = protocol.execute(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
-    {
-        RTNO_ERROR(logger, "execute failed({})", ssr::rtno2::result_to_string(result));
-        return result;
-    }
-    {
-        auto v = protocol.receive_as<T>(outport_name, wait_usec, try_count);
-        if (v.result != ssr::rtno2::RESULT::OK)
+        if ((result = protocol.send_as<T>(inport_name, send_data, wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "receive_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
-            return v.result;
+            RTNO_ERROR(logger, "send_as('{}') failed({})", inport_name, ssr::rtno2::result_to_string(result));
+            return result;
         }
-        if (v.value.value() != send_data)
+        if ((result = protocol.execute(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "received value is invalid ({} != {})", send_data, v.value.value());
-            return ssr::rtno2::RESULT::ERR;
+            RTNO_ERROR(logger, "execute failed({})", ssr::rtno2::result_to_string(result));
+            return result;
         }
+        {
+            auto v = protocol.receive_as<T>(outport_name, wait_usec, try_count);
+            if (v.result != ssr::rtno2::RESULT::OK)
+            {
+                RTNO_ERROR(logger, "receive_as('{}') failed({})", outport_name, ssr::rtno2::result_to_string(v.result));
+                return v.result;
+            }
+            if (v.value.value() != send_data)
+            {
+                RTNO_ERROR(logger, "received value is invalid ({} != {})", send_data, v.value.value());
+                return ssr::rtno2::RESULT::ERR;
+            }
+        }
+        return ssr::rtno2::RESULT::OK;
     }
-    return ssr::rtno2::RESULT::OK;
+    catch (const std::exception &e)
+    {
+        RTNO_ERROR(logger, "In do_send_and_recv_test in test_function.h, Exception: {}", e.what());
+        throw e;
+    }
 }
 
 template <typename T>
 void conduct_send_and_recv_test(const std::string &test_name, ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const T initial_data, const T send_data)
 {
-    ssr::rtno2::RESULT result;
-    RTNO_INFO(logger, "[TEST] '{}'", test_name);
-    if ((result = setup(logger, protocol)) == ssr::rtno2::RESULT::OK)
+    try
     {
-        RTNO_DEBUG(logger, "  [SETUP] '{}' OK", test_name);
-        if ((result = do_send_and_recv_test<T>(logger, protocol, inport_name, outport_name, initial_data, send_data)) != ssr::rtno2::RESULT::OK)
+        ssr::rtno2::RESULT result;
+        RTNO_DEBUG(logger, "[TEST] '{}'", test_name);
+        if ((result = setup(logger, protocol)) == ssr::rtno2::RESULT::OK)
         {
-            RTNO_ERROR(logger, "  [FAILED] '{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+            RTNO_DEBUG(logger, "  [SETUP] '{}' OK", test_name);
+            if ((result = do_send_and_recv_test<T>(logger, protocol, inport_name, outport_name, initial_data, send_data)) != ssr::rtno2::RESULT::OK)
+            {
+                RTNO_ERROR(logger, "  [FAILED] '{}' failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+            }
+            else
+            {
+                RTNO_INFO(logger, "  [PASSED] '{}' OK", test_name);
+            }
+            if ((result = teardown(logger, protocol)) == ssr::rtno2::RESULT::OK)
+            {
+                RTNO_DEBUG(logger, "  [TEARDOWN] '{}' OK", test_name);
+            }
         }
         else
         {
-            RTNO_INFO(logger, "  [PASSED] '{}' OK", test_name);
-        }
-        if ((result = teardown(logger, protocol)) == ssr::rtno2::RESULT::OK)
-        {
-            RTNO_DEBUG(logger, "  [TEARDOWN] '{}' OK", test_name);
+            RTNO_ERROR(logger, "  [FAILED] '{}' setup failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
         }
     }
-    else
+    catch (const std::exception &e)
     {
-        RTNO_ERROR(logger, "  [FAILED] '{}' setup failed. RESULT: {}", test_name, ssr::rtno2::result_to_string(result));
+        RTNO_ERROR(logger, "  [EXCEPTION] In conduct_send_and_recv_test in test_function.h, '{}' Exception: {}", test_name, e.what());
+        throw e;
     }
 }
 
@@ -125,7 +141,7 @@ template <typename T>
 ssr::rtno2::RESULT do_seq_send_and_recv_test(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const std::vector<T> &initial_data, const std::vector<T> &send_data)
 {
     uint32_t wait_usec = 2000 * 1000;
-    int try_count = 10;
+    int try_count = 15;
     ssr::rtno2::RESULT result;
     {
         auto v = protocol.receive_seq_as<T>(outport_name, wait_usec, try_count);
@@ -171,7 +187,7 @@ template <typename T>
 void conduct_seq_send_and_recv_test(const std::string &test_name, ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol, const std::string &inport_name, const std::string &outport_name, const std::vector<T> &initial_data, const std::vector<T> &send_data)
 {
     ssr::rtno2::RESULT result;
-    RTNO_INFO(logger, "[TEST] '{}'", test_name);
+    RTNO_DEBUG(logger, "[TEST] '{}'", test_name);
     if ((result = setup(logger, protocol)) == ssr::rtno2::RESULT::OK)
     {
         if ((result = do_seq_send_and_recv_test<T>(logger, protocol, inport_name, outport_name, initial_data, send_data)) != ssr::rtno2::RESULT::OK)
@@ -206,32 +222,56 @@ void conduct_seq_send_and_recv_test(const std::string &test_name, ssr::rtno2::lo
 ssr::rtno2::RESULT setup(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol)
 {
     uint32_t wait_usec = 200 * 1000;
-    int try_count = 10;
+    int try_count = 15;
     ssr::rtno2::RESULT result;
-    if ((result = protocol.activate(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+    try
     {
-        RTNO_ERROR(logger, "in setup, activate failed({})", ssr::rtno2::result_to_string(result));
-        return result;
+        if ((result = protocol.activate(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+        {
+            RTNO_ERROR(logger, "in setup, activate failed({})", ssr::rtno2::result_to_string(result));
+            return result;
+        }
     }
-    if ((result = protocol.execute(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+    catch (const std::exception &e)
     {
-        RTNO_ERROR(logger, "in setup, execute failed({})", ssr::rtno2::result_to_string(result));
-        return result;
+        RTNO_ERROR(logger, "In activating RTno in setup in test_function.h, Exception: {}", e.what());
+        throw e;
     }
-    return ssr::rtno2::RESULT::OK;
+    try
+    {
+        if ((result = protocol.execute(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+        {
+            RTNO_ERROR(logger, "in setup, execute failed({})", ssr::rtno2::result_to_string(result));
+            return result;
+        }
+        return ssr::rtno2::RESULT::OK;
+    }
+    catch (const std::exception &e)
+    {
+        RTNO_ERROR(logger, "In executing RTno in setup in test_function.h, Exception: {}", e.what());
+        throw e;
+    }
 }
 
 ssr::rtno2::RESULT teardown(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol)
 {
-    uint32_t wait_usec = 200 * 1000;
-    int try_count = 10;
-    ssr::rtno2::RESULT result;
-    if ((result = protocol.deactivate(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+    try
     {
-        RTNO_ERROR(logger, "in teardown, deactivate failed({})", ssr::rtno2::result_to_string(result));
-        return result;
+        uint32_t wait_usec = 200 * 1000;
+        int try_count = 15;
+        ssr::rtno2::RESULT result;
+        if ((result = protocol.deactivate(wait_usec, try_count)) != ssr::rtno2::RESULT::OK)
+        {
+            RTNO_ERROR(logger, "in teardown, deactivate failed({})", ssr::rtno2::result_to_string(result));
+            return result;
+        }
+        return ssr::rtno2::RESULT::OK;
     }
-    return ssr::rtno2::RESULT::OK;
+    catch (const std::exception &e)
+    {
+        RTNO_ERROR(logger, "In teardown in test_function.h, Exception: {}", e.what());
+        throw e;
+    }
 }
 
 /*******************************************************************

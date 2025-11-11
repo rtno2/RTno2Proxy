@@ -32,5 +32,11 @@ namespace ssr::rtno2
 	private:
 		RESULT read(uint8_t *buffer, uint8_t size, const uint32_t wait_usec = 1000 * 1000);
 		RESULT write(const uint8_t *buffer, const uint8_t size);
+
+	public:
+		void clear_rx_buffer()
+		{
+			serial_device_->flushRxBuffer();
+		}
 	};
 };

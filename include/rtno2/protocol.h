@@ -81,23 +81,23 @@ namespace ssr::rtno2
 		virtual ~protocol_t(void);
 
 	private:
-		result_t<packet_t> wait_and_receive_command(const COMMAND command, const uint32_t wait_usec);
+		result_t<packet_t> wait_and_receive_command(const COMMAND command, const uint32_t wait_usec, const uint32_t retry_counts = 5);
 
 	public:
-		result_t<profile_t> get_profile(const uint32_t wait_usec, const int retry_count = 5);
-		result_t<std::string> get_log(const uint32_t wait_usec = 1000 * 1000, const int retry_count = 5);
+		result_t<profile_t> get_profile(const uint32_t wait_usec, const int retry_count = 15);
+		result_t<std::string> get_log(const uint32_t wait_usec = 1000 * 1000, const int retry_count = 15);
 
-		result_t<STATE> get_state(const uint32_t wait_usec, const int retry_count = 5);
-		result_t<EC_TYPE> get_ec_type(const uint32_t wait_usec, const int retry_count = 5);
+		result_t<STATE> get_state(const uint32_t wait_usec, const int retry_count = 15);
+		result_t<EC_TYPE> get_ec_type(const uint32_t wait_usec, const int retry_count = 15);
 
-		RESULT activate(const uint32_t wait_usec, const int retry_count = 5);
-		RESULT deactivate(const uint32_t wait_usec, const int retry_count = 5);
-		RESULT execute(const uint32_t wait_usec, const int retry_count = 5);
+		RESULT activate(const uint32_t wait_usec, const int retry_count = 15);
+		RESULT deactivate(const uint32_t wait_usec, const int retry_count = 15);
+		RESULT execute(const uint32_t wait_usec, const int retry_count = 15);
 
-		RESULT send_inport_data(const std::string &portName, const uint8_t *data, const uint8_t length, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 5);
+		RESULT send_inport_data(const std::string &portName, const uint8_t *data, const uint8_t length, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 15);
 
 		template <typename T>
-		RESULT send_as(const std::string &portName, const T &value, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
+		RESULT send_as(const std::string &portName, const T &value, uint32_t wait_usec = 20 * 1000, int32_t try_count = 15)
 		{
 			RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
 			return send_inport_data(portName, (uint8_t *)&value, sizeof(T), wait_usec, try_count);
@@ -122,7 +122,7 @@ namespace ssr::rtno2
 		}
 
 		template <typename T>
-		RESULT send_seq_as(const std::string &portName, const std::vector<T> &value, const size_t length, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
+		RESULT send_seq_as(const std::string &portName, const std::vector<T> &value, const size_t length, uint32_t wait_usec = 20 * 1000, int32_t try_count = 15)
 		{
 			// RTNO_DEBUG(logger_, "send_seq_as<{}>('{}') sending value: {}", typeid(T).name(), portName, value);
 			return send_inport_data(portName, (uint8_t *)&(value[0]), length * sizeof(T), wait_usec, try_count);
@@ -142,10 +142,10 @@ namespace ssr::rtno2
 			return result;
 		}
 
-		RESULT receive_outport_data(const std::string &portName, uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 5);
+		RESULT receive_outport_data(const std::string &portName, uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 15);
 
 		template <typename T>
-		result_t<T> receive_as(const std::string &portName, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
+		result_t<T> receive_as(const std::string &portName, uint32_t wait_usec = 20 * 1000, int32_t try_count = 15)
 		{
 			static const uint8_t BUFSIZE = MAX_PACKET_SIZE;
 			uint8_t size;
@@ -161,7 +161,7 @@ namespace ssr::rtno2
 		}
 
 		template <typename T>
-		result_t<std::vector<T>> receive_seq_as(const std::string &portName, uint32_t wait_usec = 20 * 1000, int32_t try_count = 10)
+		result_t<std::vector<T>> receive_seq_as(const std::string &portName, uint32_t wait_usec = 20 * 1000, int32_t try_count = 15)
 		{
 			const uint8_t BUFSIZE = MAX_PACKET_SIZE;
 			uint8_t size;
@@ -174,7 +174,7 @@ namespace ssr::rtno2
 			return state;
 		}
 
-		RESULT receive_log_data(uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 5);
+		RESULT receive_log_data(uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 15);
 
 	private:
 		platform_profile_t parse_platform_profile(const packet_t &packet);

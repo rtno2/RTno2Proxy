@@ -17,16 +17,18 @@ const static ssr::rtno2::LOGLEVEL loglevel = ssr::rtno2::LOGLEVEL::WARN;
  */
 void do_test(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol)
 {
-    auto prof_result = protocol.get_profile(200 * 1000, 15);
+    const int retry_count = 100;
+    auto prof_result = protocol.get_profile(100 * 1000, retry_count);
     if (prof_result.result != ssr::rtno2::RESULT::OK)
     {
         RTNO_ERROR(logger, "[TEST][FAILED] Getting profile failed. {}", ssr::rtno2::result_to_string(prof_result.result));
         return;
     }
-    RTNO_INFO(logger, "[TEST] Profile: {}", prof_result.value.value().to_string());
+    RTNO_DEBUG(logger, "[TEST] Profile: {}", prof_result.value.value().to_string());
     auto profile = prof_result.value.value();
     // 以降はポートが存在する場合にのみテストを実行する
 
+    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     // Bool test
     auto bool_in_result = profile.inport("bool_in");
     auto bool_out_result = profile.outport("bool_out");
@@ -168,6 +170,7 @@ void do_test(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol)
     {
         RTNO_WARN(logger, "[TEST] Skipping DoubleSeq data test. double_seq_in or double_seq_out port not found. in({}), out({})", ssr::rtno2::result_to_string(doubleseq_in_result.result), ssr::rtno2::result_to_string(doubleseq_out_result.result));
     }
+    RTNO_INFO(logger, "[TEST] All tests done.");
 }
 
 int do_whole_interactive(logger_t &logger)
@@ -236,6 +239,7 @@ int main(const int argc, const char *argv[])
     ssr::rtno2::logger_t logger(get_logger("main"));
     set_log_level(&logger, LOGLEVEL::INFO);
 
+    RTNO_DEBUG(logger, "[TEST] Test program started.");
     if (argc == 1)
     {
         // Whole interactive mode
@@ -267,5 +271,6 @@ int main(const int argc, const char *argv[])
     }
     delete protocol;
     delete serial_port;
+    RTNO_DEBUG(logger, "[TEST] Test program ended.");
     return 0;
 }

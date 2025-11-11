@@ -47,8 +47,12 @@ RESULT transport_t::read(uint8_t *buffer, uint8_t size, uint32_t wait_usec)
 			return RESULT::TIMEOUT;
 		}
 	}
-
-	serial_device_->read(buffer, size);
+	int read_size = serial_device_->read(buffer, size);
+	if (read_size != size)
+	{
+		RTNO_ERROR(logger_, "transport_t::read() read size mismatch (expected={}, actual={})", size, read_size);
+		return RESULT::ERR;
+	}
 	return RESULT::OK;
 }
 
@@ -96,9 +100,14 @@ RESULT transport_t::is_new(const uint32_t wait_usec)
 	RESULT result;
 	while (1)
 	{
-		if ((result = read(&buf, 1, wait_usec)) != RESULT::OK)
+		if ((result = this->read(&buf, 1, wait_usec)) != RESULT::OK)
 		{
-			RTNO_DEBUG(logger_, "transport_t::is_new() exit with {}", result_to_string(result));
+			if (result == RESULT::TIMEOUT)
+			{
+				RTNO_TRACE(logger_, "transport_t::is_new() exit with TIMEOUT");
+				return RESULT::TIMEOUT;
+			}
+			RTNO_WARN(logger_, "transport_t::is_new() exit with Error {}", result_to_string(result));
 			return result;
 		}
 		if (buf != 0x0a)
@@ -106,9 +115,14 @@ RESULT transport_t::is_new(const uint32_t wait_usec)
 			continue;
 		}
 
-		if ((result = read(&buf, 1, wait_usec)) != RESULT::OK)
+		if ((result = this->read(&buf, 1, wait_usec)) != RESULT::OK)
 		{
-			RTNO_WARN(logger_, "transport_t::is_new() exit with {}", result_to_string(result));
+			if (result == RESULT::TIMEOUT)
+			{
+				RTNO_WARN(logger_, "In transport_t::is_new() reading 2nd starting packet failed. exit with TIMEOUT");
+				return RESULT::TIMEOUT;
+			}
+			RTNO_WARN(logger_, "transport_t::is_new() exit with Error {}", result_to_string(result));
 			return result;
 		}
 		if (buf == 0x0a)
@@ -131,6 +145,7 @@ result_t<packet_t> transport_t::receive(const uint32_t wait_usec /*=RTNO_INFINIT
 		RTNO_WARN(logger_, "receive() exit with PACKET_RECEIVE_HEADER_SIZE");
 		if (result == RESULT::TIMEOUT)
 		{
+			RTNO_ERROR(logger_, "receive() exit with read header timeout");
 			return RESULT::PACKET_HEADER_TIMEOUT;
 		}
 		return result;
@@ -148,6 +163,7 @@ result_t<packet_t> transport_t::receive(const uint32_t wait_usec /*=RTNO_INFINIT
 		RTNO_WARN(logger_, "receive() exit with read data timeout");
 		if (result == RESULT::TIMEOUT)
 		{
+			RTNO_ERROR(logger_, "receive() exit with read data body timeout");
 			return RESULT::PACKET_BODY_TIMEOUT;
 		}
 		return result;
@@ -161,7 +177,7 @@ result_t<packet_t> transport_t::receive(const uint32_t wait_usec /*=RTNO_INFINIT
 	{
 		if (result == RESULT::TIMEOUT)
 		{
-			RTNO_WARN(logger_, "receive() exit with read checksum timeout");
+			RTNO_ERROR(logger_, "receive() exit with read checksum timeout");
 			return RESULT::PACKET_CHECKSUM_TIMEOUT;
 		}
 		return result;
@@ -169,7 +185,7 @@ result_t<packet_t> transport_t::receive(const uint32_t wait_usec /*=RTNO_INFINIT
 
 	if (sum != buf)
 	{
-		RTNO_ERROR(logger_, "receive() exit with checksum error. CHECKSUM value of received packet and calculated one is different. data is {}", packet.to_string());
+		RTNO_ERROR(logger_, "receive() exit with checksum error. CHECKSUM value of received packet ({}) and calculated one ({}) is different. data is {}", (int)buf, (int)sum, packet.to_string());
 		return RESULT::CHECKSUM_ERROR;
 	}
 

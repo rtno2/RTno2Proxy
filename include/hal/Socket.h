@@ -133,7 +133,10 @@ namespace ssr
             }
 
       public:
-            bool okay() const { return okay_; }
+            bool okay() const
+            {
+                  return okay_;
+            }
 
             bool isConnected()
             {
@@ -301,7 +304,7 @@ namespace ssr
 #ifdef WIN32
                   // closesocket(m_Socket);
 #else
-                  // close();
+                  close();
 #endif
             }
 
@@ -366,6 +369,8 @@ namespace ssr
                   {
                         if (::close(m_Socket) < 0)
                         {
+                              std::cerr << "Socket::close() close() failed" << std::endl;
+                              perror("Socket::close() close() failed");
                               return -1;
                         }
                         return 0;

@@ -31,6 +31,8 @@ namespace ssr::rtno2
         PACKET_ERROR = 'F',
         PACKET_ERROR_CHECKSUM = 'H',
         PACKET_ERROR_TIMEOUT = 'K',
+
+        HEART_BEAT = 'W',
     };
 
     inline std::string command_to_string(COMMAND cmd)
@@ -45,32 +47,39 @@ namespace ssr::rtno2
             return "COMMAND::DEACTIVATE";
         case COMMAND::GET_STATE:
             return "COMMAND::GET_STATE";
+
         case COMMAND::GET_CONTEXT_TYPE:
             return "COMMAND::GET_CONTEXT_TYPE";
         case COMMAND::EXECUTE:
             return "COMMAND::EXECUTE";
         case COMMAND::RESET:
             return "COMMAND::RESET";
+
         case COMMAND::ONERROR:
             return "COMMAND::ONERROR";
         case COMMAND::GET_PROFILE:
             return "COMMAND::GET_PROFILE";
         case COMMAND::INPORT_PROFILE:
-            return "COMMAND::OUTPORT_PROFILE";
+            return "COMMAND::INPORT_PROFILE";
         case COMMAND::OUTPORT_PROFILE:
             return "COMMAND::OUTPORT_PROFILE";
+        case COMMAND::PLATFORM_PROFILE:
+            return "COMMAND::PLATFORM_PROFILE";
+
         case COMMAND::SEND_DATA:
             return "COMMAND::SEND_DATA";
         case COMMAND::RECEIVE_DATA:
             return "COMMAND::RECEIVE_DATA";
+
+        case COMMAND::RECEIVE_LOG:
+            return "COMMAND::RECEIVE_LOG";
+
         case COMMAND::PACKET_ERROR:
             return "COMMAND::PACKET_ERROR";
         case COMMAND::PACKET_ERROR_CHECKSUM:
             return "COMMAND::PACKET_ERROR_CHECKSUM";
         case COMMAND::PACKET_ERROR_TIMEOUT:
             return "COMMAND::PACKET_ERROR_TIMEOUT";
-        case COMMAND::RECEIVE_LOG:
-            return "COMMAND::RECEIVE_LOG";
         default:
         {
             std::stringstream ss;
