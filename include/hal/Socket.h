@@ -20,6 +20,7 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <poll.h>
+#include <fcntl.h>
 
 #ifndef POLLSTANDARD
 #define POLLSTANDARD (POLLIN | POLLPRI | POLLOUT | POLLRDNORM | POLLRDBAND | \
@@ -310,11 +311,17 @@ namespace ssr
 
             int setNonBlock(unsigned int flag)
             {
-                  u_long val = flag;
+
+                  u_long flags = fcntl(m_Socket, F_GETFL, 0);
+                  flags = flag ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+                  // u_long val = flag ? 1 : 0;
 #ifdef WIN32
                   return ::ioctlsocket(m_Socket, FIONBIO, &val);
 #else
-                  return ioctl(m_Socket, FIONBIO, &val);
+
+                  int ret = fcntl(m_Socket, F_SETFL, flags);
+                  return ret;
+                  // return ioctl(m_Socket, FIONBIO, &val);
 #endif
             }
 

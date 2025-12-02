@@ -170,6 +170,7 @@ void do_test(ssr::rtno2::logger_t &logger, ssr::rtno2::protocol_t &protocol)
     {
         RTNO_WARN(logger, "[TEST] Skipping DoubleSeq data test. double_seq_in or double_seq_out port not found. in({}), out({})", ssr::rtno2::result_to_string(doubleseq_in_result.result), ssr::rtno2::result_to_string(doubleseq_out_result.result));
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     RTNO_INFO(logger, "[TEST] All tests done.");
 }
 
@@ -271,6 +272,5 @@ int main(const int argc, const char *argv[])
     }
     delete protocol;
     delete serial_port;
-    RTNO_DEBUG(logger, "[TEST] Test program ended.");
     return 0;
 }
