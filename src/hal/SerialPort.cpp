@@ -87,7 +87,7 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 	}
 
 #else
-std::cout << "opening..." << filename << "/" << baudrate << std::endl;
+	std::cout << "opening..." << filename << "/" << baudrate << std::endl;
 	if ((m_Fd = open(filename, O_RDWR | O_NDELAY /*| O_NOCTTY |O_NONBLOCK*/)) < 0)
 	{
 		throw ComOpenException();
@@ -190,13 +190,13 @@ int SerialPort::getSizeInRxBuffer()
 	switch (res)
 	{
 	case 0: // timeout
-	std::cout <<"timeout" << std::endl;
+		// std::cout << "timeout" << std::endl;
 		return 0;
 	case -1: // Error
-	std::cout << "err" << std::endl;
+		std::cout << "err" << std::endl;
 		throw ComAccessException();
 	default:
-	std::cout << "def" << std::endl;
+		std::cout << "def" << std::endl;
 		if (FD_ISSET(m_Fd, &fds))
 		{
 			ioctl(m_Fd, FIONREAD, &nread);
@@ -223,12 +223,12 @@ int SerialPort::write(const void *src, const unsigned int size)
 	int ret;
 	for (int i = 0; i < size; i++)
 	{
-		std::cout << "write: " << (uint8_t*)(src+1) << std::endl;
+		// std::cout << "write: " << (uint8_t*)(src+1) << std::endl;
 		if ((ret = ::write(m_Fd, ((uint8_t *)src) + i, 1)) < 0)
 		{
 			throw ComAccessException();
 		}
-		std::this_thread::sleep_for(std::chrono::microseconds(100));
+		std::this_thread::sleep_for(std::chrono::microseconds(10));
 	}
 	// if ((ret = ::write(m_Fd, src, size)) < 0)
 	// {
