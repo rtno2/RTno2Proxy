@@ -104,22 +104,6 @@ namespace ssr::rtno2
 			return RESULT::OK;
 		}
 
-		template <>
-		RESULT send_as<double>(const std::string &portName, const double &value, uint32_t wait_usec, int32_t try_count)
-		{
-			RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(double).name(), portName, value);
-			if (this->architecture_ == Architecture::UNKNOWN)
-			{
-				RTNO_WARN(logger_, "send_as<double> detected UNKNOWN architecture, sending as 8-byte double");
-			}
-			if (this->architecture_ == Architecture::AVR)
-			{
-				RTNO_DEBUG(logger_, "send_as<double> detected AVR architecture, sending as 4-byte float");
-				float fvalue = static_cast<float>(value);
-				return send_inport_data(portName, (uint8_t *)&fvalue, sizeof(float), wait_usec, try_count);
-			}
-			return send_inport_data(portName, (uint8_t *)&value, sizeof(double), wait_usec, try_count);
-		}
 
 		template <typename T>
 		RESULT send_seq_as(const std::string &portName, const std::vector<T> &value, const size_t length, uint32_t wait_usec = 20 * 1000, int32_t try_count = 15)
@@ -129,18 +113,7 @@ namespace ssr::rtno2
 			return RESULT::OK;
 		}
 
-		template <>
-		RESULT send_seq_as<bool>(const std::string &portName, const std::vector<bool> &value, const size_t length, uint32_t wait_usec, int32_t try_count)
-		{
-			uint8_t *buffer = new uint8_t[length];
-			for (auto i = 0; i < length; i++)
-			{
-				buffer[i] = value[i] ? 1 : 0;
-			}
-			auto result = send_inport_data(portName, buffer, length * sizeof(uint8_t), wait_usec, try_count);
-			delete[] buffer;
-			return result;
-		}
+
 
 		RESULT receive_outport_data(const std::string &portName, uint8_t *data, const uint8_t max_size, uint8_t *size_read, const uint32_t wait_usec = 1000 * 1000, const int retry_count = 15);
 
@@ -180,4 +153,37 @@ namespace ssr::rtno2
 		platform_profile_t parse_platform_profile(const packet_t &packet);
 		port_profile_t parse_port_profile(const packet_t &packet);
 	};
+
+
+
+	template <>
+	inline RESULT protocol_t::send_seq_as<bool>(const std::string &portName, const std::vector<bool> &value, const size_t length, uint32_t wait_usec, int32_t try_count)
+	{
+		uint8_t *buffer = new uint8_t[length];
+		for (size_t i = 0; i < length; i++)
+		{
+			buffer[i] = value[i] ? 1 : 0;
+		}
+		auto result = send_inport_data(portName, buffer, length * sizeof(uint8_t), wait_usec, try_count);
+		delete[] buffer;
+		return result;
+	}
+
+
+	template <>
+	inline RESULT protocol_t::send_as<double>(const std::string &portName, const double &value, uint32_t wait_usec, int32_t try_count)
+	{
+		RTNO_DEBUG(logger_, "send_as<{}>('{}') sending value: {}", typeid(double).name(), portName, value);
+		if (this->architecture_ == Architecture::UNKNOWN)
+		{
+			RTNO_WARN(logger_, "send_as<double> detected UNKNOWN architecture, sending as 8-byte double");
+		}
+		if (this->architecture_ == Architecture::AVR)
+		{
+			RTNO_DEBUG(logger_, "send_as<double> detected AVR architecture, sending as 4-byte float");
+			float fvalue = static_cast<float>(value);
+			return send_inport_data(portName, (uint8_t *)&fvalue, sizeof(float), wait_usec, try_count);
+		}
+		return send_inport_data(portName, (uint8_t *)&value, sizeof(double), wait_usec, try_count);
+	}
 }

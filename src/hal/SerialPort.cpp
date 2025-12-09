@@ -87,7 +87,8 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 	}
 
 #else
-	if ((m_Fd = open(filename, O_RDWR /*| O_NOCTTY |O_NONBLOCK*/)) < 0)
+std::cout << "opening..." << filename << "/" << baudrate << std::endl;
+	if ((m_Fd = open(filename, O_RDWR | O_NDELAY /*| O_NOCTTY |O_NONBLOCK*/)) < 0)
 	{
 		throw ComOpenException();
 	}
@@ -99,9 +100,9 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 	cfsetspeed(&tio, baudrate);
 	tio.c_cflag = 0;
 	tio.c_cflag |= CS8 | CLOCAL | CREAD;
-	tio.c_cflag &= ~HUPCL;
-	// tcsetattr(m_Fd, TCSANOW, &tio);
-	tcsetattr(m_Fd, TCSAFLUSH, &tio);
+	// tio.c_cflag &= ~HUPCL;
+	tcsetattr(m_Fd, TCSANOW, &tio);
+	// tcsetattr(m_Fd, TCSAFLUSH, &tio);
 
 	// play with DTR
 	int iFlags;
@@ -189,10 +190,13 @@ int SerialPort::getSizeInRxBuffer()
 	switch (res)
 	{
 	case 0: // timeout
+	std::cout <<"timeout" << std::endl;
 		return 0;
 	case -1: // Error
+	std::cout << "err" << std::endl;
 		throw ComAccessException();
 	default:
+	std::cout << "def" << std::endl;
 		if (FD_ISSET(m_Fd, &fds))
 		{
 			ioctl(m_Fd, FIONREAD, &nread);
@@ -217,18 +221,19 @@ int SerialPort::write(const void *src, const unsigned int size)
 	return WrittenBytes;
 #else
 	int ret;
-	// for (int i = 0; i < size; i++)
-	// {
-	// 	if ((ret = ::write(m_Fd, ((uint8_t *)src) + i, 1)) < 0)
-	// 	{
-	// 		throw ComAccessException();
-	// 	}
-	// 	std::this_thread::sleep_for(std::chrono::microseconds(10));
-	// }
-	if ((ret = ::write(m_Fd, src, size)) < 0)
+	for (int i = 0; i < size; i++)
 	{
-		throw ComAccessException();
+		std::cout << "write: " << (uint8_t*)(src+1) << std::endl;
+		if ((ret = ::write(m_Fd, ((uint8_t *)src) + i, 1)) < 0)
+		{
+			throw ComAccessException();
+		}
+		std::this_thread::sleep_for(std::chrono::microseconds(100));
 	}
+	// if ((ret = ::write(m_Fd, src, size)) < 0)
+	// {
+	// 	throw ComAccessException();
+	// }
 	return ret;
 #endif
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sstream>
 #include <list>
+#include "result.h"
 
 #include "type_code.h"
 
