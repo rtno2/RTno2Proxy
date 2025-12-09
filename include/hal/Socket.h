@@ -311,14 +311,15 @@ namespace ssr
 
             int setNonBlock(unsigned int flag)
             {
+                u_long lflag = flag ? 1 : 0;
 
-                  u_long flags = fcntl(m_Socket, F_GETFL, 0);
-                  flags = flag ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
-                  // u_long val = flag ? 1 : 0;
+                  
 #ifdef WIN32
-                  return ::ioctlsocket(m_Socket, FIONBIO, &val);
+                  return ::ioctlsocket(m_Socket, FIONBIO, &lflag);
 #else
-
+                u_long flags = fcntl(m_Socket, F_GETFL, 0);
+                flags = flag ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
+                // u_long val = flag ? 1 : 0;
                   int ret = fcntl(m_Socket, F_SETFL, flags);
                   return ret;
                   // return ioctl(m_Socket, FIONBIO, &val);

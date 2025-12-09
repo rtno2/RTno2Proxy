@@ -1,6 +1,6 @@
 
-#include "hal/Serial.h"
 #include "hal/EtherTcp.h"
+#include "hal/Serial.h"
 #include "rtno2/protocol.h"
 #include "rtno2/logger.h"
 
