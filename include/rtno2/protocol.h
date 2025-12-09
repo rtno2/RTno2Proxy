@@ -12,6 +12,23 @@
 #include "ec_type.h"
 #include "SerialDevice.h"
 
+
+#ifndef RTNO2API
+#ifdef WIN32
+#ifdef _WINDLL
+#ifdef rtno_proxy_EXPORTS
+#define RTNO2API __declspec(dllexport)
+#else
+#define RTNO2API __declspec(dllimport)
+#endif
+#else
+#define RTNO2API
+#endif
+#else
+#define RTNO2API
+#endif
+#endif
+
 namespace ssr::rtno2
 {
 
@@ -68,7 +85,7 @@ namespace ssr::rtno2
 
 	class RTnoRTObjectWrapper;
 
-	class protocol_t
+	class RTNO2API protocol_t
 	{
 	private:
 		transport_t transport_;

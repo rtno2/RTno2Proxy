@@ -8,10 +8,27 @@
 #include <string>
 #include <exception>
 
+
+#ifndef RTNO2API
+#ifdef WIN32
+#ifdef _WINDLL
+#ifdef rtno_proxy_EXPORTS
+#define RTNO2API __declspec(dllexport)
+#else
+#define RTNO2API __declspec(dllimport)
+#endif
+#else
+#define RTNO2API
+#endif
+#else
+#define RTNO2API
+#endif
+#endif
+
 namespace ssr::rtno2
 {
 
-	class transport_t
+	class RTNO2API transport_t
 	{
 	private:
 	protected:

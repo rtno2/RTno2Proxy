@@ -5,6 +5,21 @@
 #include "SerialDevice.h"
 #include "Socket.h"
 
+#ifndef RTNO2API
+#ifdef WIN32
+#ifdef _WINDLL
+#ifdef rtno_hal_EXPORTS
+#define RTNO2API __declspec(dllexport)
+#else
+#define RTNO2API __declspec(dllimport)
+#endif
+#else
+#define RTNO2API
+#endif
+#else
+#define RTNO2API
+#endif
+#endif
 
 namespace ssr {
   
@@ -13,7 +28,7 @@ namespace ssr {
    *
    * @brief Portable Serial Port Class
    ***************************************************/
-  class EtherTcp : public SerialDevice {
+  class RTNO2API EtherTcp : public SerialDevice {
   private:
     int m_Endflag;
     ssr::Socket *m_pSocket;
