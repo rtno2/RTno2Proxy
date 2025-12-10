@@ -8,7 +8,7 @@
 
 using namespace ssr::rtno2;
 
-LOGLEVEL loglevel = LOGLEVEL::DEBUG;
+LOGLEVEL loglevel = LOGLEVEL::INFO;
 
 template <typename T>
 inline std::string strjoin(const std::vector<T> &v)
@@ -452,7 +452,7 @@ int main(const int argc, const char *argv[])
     // logger = ssr::getLogger("main");
 
     ssr::rtno2::logger_t logger(get_logger("main"));
-    set_log_level(&logger, LOGLEVEL::DEBUG);
+    set_log_level(&logger, LOGLEVEL::INFO);
 
     if (argc == 1)
     {
@@ -475,7 +475,7 @@ int main(const int argc, const char *argv[])
     {
         return -1;
     }
-    auto protocol = new protocol_t(serial_port, loglevel);
+    auto protocol = new protocol_t(serial_port, loglevel, ssr::rtno2::LOGLEVEL::DEBUG);
 
     if (command == "interactive")
     {
