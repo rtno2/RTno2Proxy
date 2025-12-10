@@ -2,6 +2,23 @@
 
 #include <spdlog/spdlog.h>
 
+
+#ifndef RTNO2API
+#ifdef WIN32
+#ifdef _WINDLL
+#ifdef rtno_proxy_EXPORTS
+#define RTNO2API __declspec(dllexport)
+#else
+#define RTNO2API __declspec(dllimport)
+#endif
+#else
+#define RTNO2API
+#endif
+#else
+#define RTNO2API
+#endif
+#endif
+
 namespace ssr::rtno2 {
 
     using logger_t = spdlog::logger;
@@ -15,9 +32,9 @@ namespace ssr::rtno2 {
         CRITICAL = spdlog::level::critical,
         NONE = spdlog::level::off,
     };
-    void init_logger();
-    logger_t get_logger(const std::string& name);
-    void set_log_level(logger_t* logger, const LOGLEVEL level);
+    void RTNO2API init_logger();
+    logger_t RTNO2API get_logger(const std::string& name);
+    void RTNO2API set_log_level(logger_t* logger, const LOGLEVEL level);
 
 }
 
