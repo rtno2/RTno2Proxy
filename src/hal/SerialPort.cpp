@@ -11,7 +11,6 @@
  * Header Including Division
  */
 #ifdef WIN32
-
 #else
 #include <iostream>
 #include <unistd.h>
@@ -42,10 +41,11 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 {
 
 #ifdef WIN32
-	DCB dcb;
+	DCB dcb = {0};
 	m_hComm = 0;
-	m_hComm = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE,
-						  0, NULL, OPEN_EXISTING, 0, NULL);
+
+	m_hComm = CreateFile(filename, GENERIC_READ | GENERIC_WRITE,
+						 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (m_hComm == INVALID_HANDLE_VALUE)
 	{
 		m_hComm = 0;
@@ -57,6 +57,8 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 		throw ComOpenException();
 	}
 
+	dcb.DCBlength = sizeof(dcb);
+
 	if (!GetCommState(m_hComm, &dcb))
 	{
 		CloseHandle(m_hComm);
@@ -64,18 +66,11 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 		throw ComStateException();
 	}
 
-	dcb.BaudRate = baudrate;
-	dcb.fParity = 0;
-	dcb.fOutxCtsFlow = 0;
-	dcb.fOutxDsrFlow = 0;
-	dcb.fDtrControl = RTS_CONTROL_DISABLE;
-	dcb.fDsrSensitivity = 0;
-	dcb.fTXContinueOnXoff = 0;
-	dcb.fErrorChar = 0;
-	dcb.fNull = 0;
-	dcb.fRtsControl = RTS_CONTROL_DISABLE;
-	dcb.fAbortOnError = 0;
 	dcb.ByteSize = 8;
+	dcb.BaudRate = CBR_57600;
+	dcb.fDtrControl = 1;
+	dcb.fTXContinueOnXoff = 1;
+	dcb.fRtsControl = 1;
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
 
@@ -83,6 +78,20 @@ SerialPort::SerialPort(const char *filename, const int baudrate)
 	{
 		CloseHandle(m_hComm);
 		m_hComm = 0;
+		throw ComStateException();
+	}
+
+	COMMTIMEOUTS timeouts = {0};
+	timeouts.ReadIntervalTimeout = 50;
+	timeouts.ReadTotalTimeoutConstant = 50;
+	timeouts.ReadTotalTimeoutMultiplier = 10;
+	timeouts.WriteTotalTimeoutConstant = 10;
+	timeouts.WriteTotalTimeoutMultiplier = 10;
+
+	if (!SetCommTimeouts(m_hComm, &timeouts))
+	{
+		// std::cerr << "Error setting timeouts" << std::endl;
+		CloseHandle(m_hComm);
 		throw ComStateException();
 	}
 
